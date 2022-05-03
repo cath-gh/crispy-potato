@@ -43,7 +43,7 @@ const server = http.createServer();
 server.on('request', (req, res) => {
   // 与服务端建立连接，透传客户端请求及服务端响应内容
   const client = http.request(getOptions(req), (svrRes) => {
-    res.writeHead(svrRes.statusCode, svrRes.headers);
+    // res.writeHead(svrRes.statusCode, svrRes.headers);
     svrRes.pipe(res);
   });
   req.pipe(client);
@@ -51,13 +51,23 @@ server.on('request', (req, res) => {
 });
 
 // 隧道代理：处理 HTTPS、HTTP2、WebSocket、TCP 等请求
-server.on('connect', (req, socket) => {
+server.on('connect', (req, clientSocket, head) => {
   // 与服务端建立连接，透传客户端请求及服务端响应内容
-  const client = connect(getHostPort(req.url), () => {
-    socket.write('HTTP/1.1 200 Connection Established\r\n\r\n');
-    socket.pipe(client).pipe(socket);
+  // const client = connect(getHostPort(req.url), () => {
+  //   socket.write('HTTP/1.1 200 Connection Established\r\n\r\n');
+  //   socket.pipe(client).pipe(socket);
+  // });
+
+  const serverSocket = connect(getHostPort(req.url), () => {
+    clientSocket.write('HTTP/1.1 200 Connection Established\r\n' +
+                    'Proxy-agent: Node.js-Proxy\r\n' +
+                    '\r\n');
+    serverSocket.write(head);
+    serverSocket.pipe(clientSocket);
+    clientSocket.pipe(serverSocket);
   });
-  handleClose(socket, client);
+
+  handleClose(clientSocket, serverSocket);
 });
 
-server.listen(8080);
+server.listen(3456);
