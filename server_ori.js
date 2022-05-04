@@ -42,21 +42,15 @@ const server = http.createServer();
 // 处理 HTTP 请求
 server.on('request', (req, res) => {
   // 与服务端建立连接，透传客户端请求及服务端响应内容
-
-  if(req.url.indexOf('www.bzfxw.com/so/index.php?keyword=')!==-1){//测试修改url=》成功
-    req.url = 'http://www.bzfxw.com/so/index.php?keyword=2021'
-  }
-
   const client = http.request(getOptions(req), (svrRes) => {
     res.writeHead(svrRes.statusCode, svrRes.headers);
     svrRes.pipe(res);
   });
   req.pipe(client);
-  handleClose(client, res);
+  handleClose(res, client);
 });
 
 // 隧道代理：处理 HTTPS、HTTP2、WebSocket、TCP 等请求
-// server.on('connect', (req, clientSocket, head) => {
 server.on('connect', (req, socket) => {
   // 与服务端建立连接，透传客户端请求及服务端响应内容
   const client = connect(getHostPort(req.url), () => {
@@ -64,18 +58,6 @@ server.on('connect', (req, socket) => {
     socket.pipe(client).pipe(socket);
   });
   handleClose(socket, client);
-
-  // const serverSocket = connect(getHostPort(req.url), () => {
-  //   clientSocket.write('HTTP/1.1 200 Connection Established\r\n' +
-  //                   'Proxy-agent: Node.js-Proxy\r\n' +
-  //                   '\r\n');
-  //   serverSocket.write(head);
-  //   serverSocket.pipe(clientSocket);
-  //   clientSocket.pipe(serverSocket);
-  // });
-
-  // handleClose(clientSocket, serverSocket);
 });
 
 server.listen(3456);
-console.log('server.listen(3456)');
